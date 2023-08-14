@@ -1,0 +1,494 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPcxKulAQMySRT42rWRYdW3",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/HaripriyaSooriyan/Project-3/blob/main/NLP%20practice%20data-Spam%20classi\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 1,
+      "metadata": {
+        "id": "HdTMt50OEBYd"
+      },
+      "outputs": [],
+      "source": [
+        "import pandas as pd\n",
+        "import re\n",
+        "import nltk\n",
+        "from nltk.corpus import stopwords\n",
+        "from nltk.stem.porter import PorterStemmer\n",
+        "from sklearn.feature_extraction.text import CountVectorizer"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "msg_df=pd.read_csv(\"/SPAM text message 20170820 - Data.csv\")"
+      ],
+      "metadata": {
+        "id": "pjI8lHRMEpE6"
+      },
+      "execution_count": 4,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "msg_df.head()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 206
+        },
+        "id": "YjD6R-qIFlGx",
+        "outputId": "86c76844-b3ad-4f48-b95b-2632a52c74a8"
+      },
+      "execution_count": 5,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "  Category                                            Message\n",
+              "0      ham  Go until jurong point, crazy.. Available only ...\n",
+              "1      ham                      Ok lar... Joking wif u oni...\n",
+              "2     spam  Free entry in 2 a wkly comp to win FA Cup fina...\n",
+              "3      ham  U dun say so early hor... U c already then say...\n",
+              "4      ham  Nah I don't think he goes to usf, he lives aro..."
+            ],
+            "text/html": [
+              "\n",
+              "\n",
+              "  <div id=\"df-2c5dd5d7-1b6c-4469-911e-245b16229de4\">\n",
+              "    <div class=\"colab-df-container\">\n",
+              "      <div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>Category</th>\n",
+              "      <th>Message</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>ham</td>\n",
+              "      <td>Go until jurong point, crazy.. Available only ...</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>ham</td>\n",
+              "      <td>Ok lar... Joking wif u oni...</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2</th>\n",
+              "      <td>spam</td>\n",
+              "      <td>Free entry in 2 a wkly comp to win FA Cup fina...</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>3</th>\n",
+              "      <td>ham</td>\n",
+              "      <td>U dun say so early hor... U c already then say...</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>4</th>\n",
+              "      <td>ham</td>\n",
+              "      <td>Nah I don't think he goes to usf, he lives aro...</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>\n",
+              "      <button class=\"colab-df-convert\" onclick=\"convertToInteractive('df-2c5dd5d7-1b6c-4469-911e-245b16229de4')\"\n",
+              "              title=\"Convert this dataframe to an interactive table.\"\n",
+              "              style=\"display:none;\">\n",
+              "\n",
+              "  <svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "       width=\"24px\">\n",
+              "    <path d=\"M0 0h24v24H0V0z\" fill=\"none\"/>\n",
+              "    <path d=\"M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z\"/><path d=\"M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z\"/>\n",
+              "  </svg>\n",
+              "      </button>\n",
+              "\n",
+              "\n",
+              "\n",
+              "    <div id=\"df-5fcb6c22-4b38-409b-b55d-d4f56ce8db1d\">\n",
+              "      <button class=\"colab-df-quickchart\" onclick=\"quickchart('df-5fcb6c22-4b38-409b-b55d-d4f56ce8db1d')\"\n",
+              "              title=\"Suggest charts.\"\n",
+              "              style=\"display:none;\">\n",
+              "\n",
+              "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\"viewBox=\"0 0 24 24\"\n",
+              "     width=\"24px\">\n",
+              "    <g>\n",
+              "        <path d=\"M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z\"/>\n",
+              "    </g>\n",
+              "</svg>\n",
+              "      </button>\n",
+              "    </div>\n",
+              "\n",
+              "<style>\n",
+              "  .colab-df-quickchart {\n",
+              "    background-color: #E8F0FE;\n",
+              "    border: none;\n",
+              "    border-radius: 50%;\n",
+              "    cursor: pointer;\n",
+              "    display: none;\n",
+              "    fill: #1967D2;\n",
+              "    height: 32px;\n",
+              "    padding: 0 0 0 0;\n",
+              "    width: 32px;\n",
+              "  }\n",
+              "\n",
+              "  .colab-df-quickchart:hover {\n",
+              "    background-color: #E2EBFA;\n",
+              "    box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "    fill: #174EA6;\n",
+              "  }\n",
+              "\n",
+              "  [theme=dark] .colab-df-quickchart {\n",
+              "    background-color: #3B4455;\n",
+              "    fill: #D2E3FC;\n",
+              "  }\n",
+              "\n",
+              "  [theme=dark] .colab-df-quickchart:hover {\n",
+              "    background-color: #434B5C;\n",
+              "    box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "    filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "    fill: #FFFFFF;\n",
+              "  }\n",
+              "</style>\n",
+              "\n",
+              "    <script>\n",
+              "      async function quickchart(key) {\n",
+              "        const containerElement = document.querySelector('#' + key);\n",
+              "        const charts = await google.colab.kernel.invokeFunction(\n",
+              "            'suggestCharts', [key], {});\n",
+              "      }\n",
+              "    </script>\n",
+              "\n",
+              "      <script>\n",
+              "\n",
+              "function displayQuickchartButton(domScope) {\n",
+              "  let quickchartButtonEl =\n",
+              "    domScope.querySelector('#df-5fcb6c22-4b38-409b-b55d-d4f56ce8db1d button.colab-df-quickchart');\n",
+              "  quickchartButtonEl.style.display =\n",
+              "    google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "}\n",
+              "\n",
+              "        displayQuickchartButton(document);\n",
+              "      </script>\n",
+              "      <style>\n",
+              "    .colab-df-container {\n",
+              "      display:flex;\n",
+              "      flex-wrap:wrap;\n",
+              "      gap: 12px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert {\n",
+              "      background-color: #E8F0FE;\n",
+              "      border: none;\n",
+              "      border-radius: 50%;\n",
+              "      cursor: pointer;\n",
+              "      display: none;\n",
+              "      fill: #1967D2;\n",
+              "      height: 32px;\n",
+              "      padding: 0 0 0 0;\n",
+              "      width: 32px;\n",
+              "    }\n",
+              "\n",
+              "    .colab-df-convert:hover {\n",
+              "      background-color: #E2EBFA;\n",
+              "      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);\n",
+              "      fill: #174EA6;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert {\n",
+              "      background-color: #3B4455;\n",
+              "      fill: #D2E3FC;\n",
+              "    }\n",
+              "\n",
+              "    [theme=dark] .colab-df-convert:hover {\n",
+              "      background-color: #434B5C;\n",
+              "      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);\n",
+              "      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));\n",
+              "      fill: #FFFFFF;\n",
+              "    }\n",
+              "  </style>\n",
+              "\n",
+              "      <script>\n",
+              "        const buttonEl =\n",
+              "          document.querySelector('#df-2c5dd5d7-1b6c-4469-911e-245b16229de4 button.colab-df-convert');\n",
+              "        buttonEl.style.display =\n",
+              "          google.colab.kernel.accessAllowed ? 'block' : 'none';\n",
+              "\n",
+              "        async function convertToInteractive(key) {\n",
+              "          const element = document.querySelector('#df-2c5dd5d7-1b6c-4469-911e-245b16229de4');\n",
+              "          const dataTable =\n",
+              "            await google.colab.kernel.invokeFunction('convertToInteractive',\n",
+              "                                                     [key], {});\n",
+              "          if (!dataTable) return;\n",
+              "\n",
+              "          const docLinkHtml = 'Like what you see? Visit the ' +\n",
+              "            '<a target=\"_blank\" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'\n",
+              "            + ' to learn more about interactive tables.';\n",
+              "          element.innerHTML = '';\n",
+              "          dataTable['output_type'] = 'display_data';\n",
+              "          await google.colab.output.renderOutput(dataTable, element);\n",
+              "          const docLink = document.createElement('div');\n",
+              "          docLink.innerHTML = docLinkHtml;\n",
+              "          element.appendChild(docLink);\n",
+              "        }\n",
+              "      </script>\n",
+              "    </div>\n",
+              "  </div>\n"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 5
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "msg_df.shape"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "lXUJb2-XFoqa",
+        "outputId": "55e704d6-de85-4047-ed6e-4ed00d4b93d0"
+      },
+      "execution_count": 6,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "(5572, 2)"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 6
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "msg_df['Category'].value_counts()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "xFWqoJn9Fo0u",
+        "outputId": "8f5b9def-f0aa-4fce-a21c-f6158ab01258"
+      },
+      "execution_count": 7,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "ham     4825\n",
+              "spam     747\n",
+              "Name: Category, dtype: int64"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 7
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "nltk.download('stopwords')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "3SsZQf7GF4Mk",
+        "outputId": "f9c059e4-0ea0-4722-80ac-fe06e5969ed4"
+      },
+      "execution_count": 8,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "[nltk_data] Downloading package stopwords to /root/nltk_data...\n",
+            "[nltk_data]   Unzipping corpora/stopwords.zip.\n"
+          ]
+        },
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "True"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 8
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "ps=PorterStemmer()"
+      ],
+      "metadata": {
+        "id": "PEWUAGGRF4Xl"
+      },
+      "execution_count": 9,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "corpus=[]\n",
+        "for i in range(0,len(msg_df)):\n",
+        "  review = re.sub\n",
+        "  review=re.sub('[^a-zA-Z]',' ',msg_df['Message'][i])\n",
+        "  review=review.lower()\n",
+        "  review=review.split()\n",
+        "  review=[ps.stem(word) for word in review if  not word in set(stopwords.words('english'))]\n",
+        "  review=''.join(review)\n",
+        "  corpus.append(review)\n"
+      ],
+      "metadata": {
+        "id": "PnsBYFhLGAEl"
+      },
+      "execution_count": 10,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "msg_df['Message'][:5]"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ZD6enZocGANK",
+        "outputId": "5f7b2fb1-9157-42af-eeea-d511b81dfb68"
+      },
+      "execution_count": 11,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "0    Go until jurong point, crazy.. Available only ...\n",
+              "1                        Ok lar... Joking wif u oni...\n",
+              "2    Free entry in 2 a wkly comp to win FA Cup fina...\n",
+              "3    U dun say so early hor... U c already then say...\n",
+              "4    Nah I don't think he goes to usf, he lives aro...\n",
+              "Name: Message, dtype: object"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 11
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "corpus[:5]"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "jm0Or0kEHzRa",
+        "outputId": "9ac9c15f-89c4-4254-f081-4ff457f6f814"
+      },
+      "execution_count": 13,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "['gojurongpointcraziavailbugingreatworldlaebuffetcinegotamorwat',\n",
+              " 'oklarjokewifuoni',\n",
+              " 'freeentriwklicompwinfacupfinaltktstmaytextfareceiventriquestionstdtxtratecappli',\n",
+              " 'udunsayearlihorucalreadisay',\n",
+              " 'nahthinkgoeusflivearoundthough']"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 13
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "axUrgZyZH4CR"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "_hVRc16IH4Nz"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "h7W848ZnH4Y-"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
